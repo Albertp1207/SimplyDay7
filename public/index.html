@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>ToDo</title>
+</head>
+<body>
+    <div id = "root"></div>
+    <script>
+        const root = document.getElementById('root');
+
+        const state = {
+            inputValue: '',
+            todos: [],
+            page: {
+                name:"main",
+                info: null
+            }
+        };
+        
+        //after every manipulation with db fetch again and render
+        const updateTodosAndRender = () => {
+            fetch("/todos")
+                .then(res => res.json())
+                .then(data => {
+                    console.log(data)
+                    state.todos = data.todos;
+                    render(state,root)
+                })
+                .catch(err => {
+                    console.log(err)    
+                })
+        }
+        updateTodosAndRender();
+
+        //for both pages
+        const onFormChange = event => {
+            state.inputValue = event.target.value;
+        }
+        
+        const addTodo = event => {
+            event.preventDefault();
+
+            const body = {
+                todoText: state.inputValue
+            }
+            fetch("/todos",{
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                method:"POST",
+                body:JSON.stringify(body),
+            }).then((res)=>{
+                if(res.status === 200) {
+                    state.inputValue = ""
+                    updateTodosAndRender();                    
+                } else {
+                    console.error("change text")
+                }
+            })
+        }
+
+        const deleteTodo = _id => {
+            fetch("/todos",{
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                method:"DELETE",
+                body:JSON.stringify({_id}),
+            }).then(res=>{
+                if(res.status === 200) {
+                    updateTodosAndRender();
+                }
+            })
+        }
+
+        const goEditPage = (_id,text) => {
+            state.page.name = "edit";
+            state.page.info = {
+                _id:_id,
+                text: text
+            } 
+            render(state,root)     
+        }
+
+        // main's components
+        const form = inputValue => `
+            <form onchange = onFormChange(event) onsubmit = addTodo(event)>
+                <input type ="text" value= "${inputValue}" />
+                <input type ="submit" />
+            </form>
+        `
+        const todoRow = todo => 
+            
+        {
+            console.log(`,"${todo.text}"`)
+            return `
+            <li>
+                <label>${todo.text}</label>
+                <button onClick=goEditPage("${todo._id}",""${todo.text}"")>edit</button> 
+                <button onClick=deleteTodo("${todo._id}")>delete</button> 
+            </li>
+        `}
+        const todosList = todos => {
+            todos = todos.map(todo => todoRow(todo));
+            return `
+                <ul>
+                    ${todos.join("")}
+                </ul>
+            `
+        }
+        // ***
+
+        const changeTodo = (event,id) => {
+            event.preventDefault();
+            const body = {
+                todoText: state.inputValue,
+                id
+            }
+            fetch("/todos",{
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                method:"PUT",
+                body:JSON.stringify(body),
+            }).then((res)=>{
+                if(res.status === 200) {
+                    state.page.name = "main",
+                    updateTodosAndRender();
+                } else {
+                    console.error("change text")
+                }
+            })
+        }
+        
+
+
+
+        const render = (state,target) => {
+            if(state.page.name === "main") {
+                target.innerHTML = `
+                ${form(state.inputValue)}
+                ${todosList(state.todos)}
+            `
+            } else {
+                const {text,_id} = state.page.info;
+                state.inputValue = text;
+                target.innerHTML = `
+                    <form onchange = onFormChange(event) onsubmit = changeTodo(event,"${_id}")>
+                        <input type ="text"  value= "${state.inputValue}" />
+                        <input type ="submit" />
+                    </form>
+                `
+            }
+            
+        }
+
+        render(state,root)
+        
+
+    
+    
+    </script>
+</body>
+</html>
