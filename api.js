@@ -1,32 +1,10 @@
-const express = require("express");
+const express = require('express');
 const app = express();
-const path = require('path');
-const indexHTMLPath = path.join(__dirname,"/public/index.html");
-const api = require("./api")
-const mongoose = require("mongoose");
-
-mongoose.connect("mongodb://localhost/firstDB",{ useNewUrlParser: true })
-    .then(() => {
-        console.log("ok")
-    })
-    .catch(() => {
-        console.log("error")
-    })
-
-require("./todo.model");
-const Todo = mongoose.model("todos");
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.use(express.static('public'));
+const router = express.Router();
 
 
-app.get("/", (req,res) => {
-    res.sendFile(indexHTMLPath)
-})
-
-app.get("/todos",(req,res) => {
+router.get("/todos", (req,res) => {
+    const Todo = req.app.get("Todo");
     Todo.find({})
         .then(todos => {
             res.send({todos})
@@ -35,7 +13,9 @@ app.get("/todos",(req,res) => {
             console.log(err)
         })
 })
-app.post("/todos",(req,res) => {
+
+router.post("/todos", (req,res) => {
+    const Todo = req.app.get("Todo");
     const {todoText} = req.body
     if(todoText.trim().length > 0) {
         new Todo({text:req.body.todoText}).save()
@@ -45,8 +25,9 @@ app.post("/todos",(req,res) => {
         res.status(422).json({status:"input is empty"});
     }
 })
-app.put("/todos",(req,res) => {
-    const id = req.body.id;
+router.put("/todos/:id", (req,res) => {
+    const Todo = req.app.get("Todo");
+    const id = req.params.id
     const newText = req.body.todoText;
 
     Todo.findOne({_id:id})
@@ -74,9 +55,11 @@ app.put("/todos",(req,res) => {
             res.status(e.status).json({status:e.statusText})
         })
 })
+router.delete("/todos/:id", (req,res) => {
+    const Todo = req.app.get("Todo");
+    const id = req.params.id
 
-app.delete("/todos",(req,res) => {
-    Todo.deleteOne({_id:req.body._id})
+    Todo.deleteOne({_id:id})
         .then(()=> {
             res.status(200).json({status:"ok"});
         })
@@ -86,13 +69,6 @@ app.delete("/todos",(req,res) => {
         
 })
 
-// for api
-app.set("Todo",Todo)
-// api
-app.use("/api",api)
-
-
-
-app.listen(3000);
+module.exports = router;
 
 
