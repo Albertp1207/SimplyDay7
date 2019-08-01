@@ -56,7 +56,6 @@ app.put("/todos",(req,res) => {
     Todo.findOne({_id:id})
         .then(todo => {
             let {text} = todo;
-            console.log(text,newText)
             if(text ===newText) {
                 throw {status:401,statusText:"Unauthorized"}
             } else if (newText.trim().length < 1) {

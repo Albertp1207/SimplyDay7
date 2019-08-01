@@ -25,7 +25,6 @@
             fetch("/todos")
                 .then(res => res.json())
                 .then(data => {
-                    console.log(data)
                     state.todos = data.todos;
                     render(state,root)
                 })
@@ -78,11 +77,13 @@
             })
         }
 
-        const goEditPage = (_id,text) => {
+        const goEditPage = (_id) => {
+            const elem = state.todos.find(elem => elem._id === _id);
+            const text = elem.text;
             state.page.name = "edit";
             state.page.info = {
-                _id:_id,
-                text: text
+                _id,
+                text
             } 
             render(state,root)     
         }
@@ -94,17 +95,14 @@
                 <input type ="submit" />
             </form>
         `
-        const todoRow = todo => 
-            
-        {
-            console.log(`,"${todo.text}"`)
-            return `
+        // second param of goEditPage, string with spaces doesn't work
+        const todoRow = todo => `
             <li>
                 <label>${todo.text}</label>
-                <button onClick=goEditPage("${todo._id}",""${todo.text}"")>edit</button> 
+                <button onClick=goEditPage("${todo._id}")>edit</button> 
                 <button onClick=deleteTodo("${todo._id}")>delete</button> 
             </li>
-        `}
+        `
         const todosList = todos => {
             todos = todos.map(todo => todoRow(todo));
             return `
@@ -130,7 +128,8 @@
                 body:JSON.stringify(body),
             }).then((res)=>{
                 if(res.status === 200) {
-                    state.page.name = "main",
+                    state.page.name = "main";
+                    state.inputValue = "";
                     updateTodosAndRender();
                 } else {
                     console.error("change text")
